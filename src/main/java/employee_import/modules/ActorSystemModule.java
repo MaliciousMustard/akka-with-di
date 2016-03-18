@@ -3,6 +3,7 @@ package employee_import.modules;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.japi.Creator;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import employee_import.configuration.ImporterConfig;
@@ -24,11 +25,10 @@ public class ActorSystemModule extends AbstractModule {
 
     @Provides
     private ActorRef createLineImportSupervisor(final ActorSystem system, ImporterConfig config, EmployeeDao employeeDao) {
-        List<Props> lineImporterProps = IntStream.range(0, config.getNumberOfThreads())
-                .mapToObj(i -> Props.create(LineImporter.class, () -> new LineImporter(employeeDao))).collect(toList());
+        List<Creator<LineImporter>> lineImporters = IntStream.range(0, config.getNumberOfThreads())
+                .mapToObj(i -> (Creator<LineImporter>) () -> new LineImporter(employeeDao))
+                .collect(toList());
 
-        return system.actorOf(Props.create(LineImportSupervisor.class, () -> {
-            return new LineImportSupervisor(lineImporterProps);
-        }));
+        return system.actorOf(Props.create(LineImportSupervisor.class, () -> new LineImportSupervisor(lineImporters)));
     }
 }

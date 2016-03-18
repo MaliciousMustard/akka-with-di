@@ -2,6 +2,7 @@ package employee_import.line_import;
 
 import akka.actor.Props;
 import akka.actor.UntypedActor;
+import akka.japi.Creator;
 import akka.routing.ActorRefRoutee;
 import akka.routing.Router;
 import akka.routing.SmallestMailboxRoutingLogic;
@@ -23,11 +24,11 @@ public class LineImportSupervisor extends UntypedActor {
     private int pending = 0;
 
     @Inject
-    public LineImportSupervisor(Collection<Props> lineImporterProps) {
+    public LineImportSupervisor(Collection<Creator<LineImporter>> lineImporterProps) {
         this.router = new Router(
                 new SmallestMailboxRoutingLogic(),
                 lineImporterProps.stream()
-                        .map(lineImporter -> new ActorRefRoutee(getContext().actorOf(lineImporter)))
+                        .map(lineImporter -> new ActorRefRoutee(getContext().actorOf(Props.create(LineImporter.class, lineImporter))))
                         .collect(toList())
         );
     }
