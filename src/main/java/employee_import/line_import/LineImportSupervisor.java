@@ -1,13 +1,19 @@
 package employee_import.line_import;
 
+import akka.actor.Props;
 import akka.actor.UntypedActor;
+import akka.routing.ActorRefRoutee;
 import akka.routing.Router;
+import akka.routing.SmallestMailboxRoutingLogic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Collection;
+
+import static java.util.stream.Collectors.toList;
 
 public class LineImportSupervisor extends UntypedActor {
 
@@ -17,8 +23,13 @@ public class LineImportSupervisor extends UntypedActor {
     private int pending = 0;
 
     @Inject
-    public LineImportSupervisor(Router router) {
-        this.router = router;
+    public LineImportSupervisor(Collection<Props> lineImporterProps) {
+        this.router = new Router(
+                new SmallestMailboxRoutingLogic(),
+                lineImporterProps.stream()
+                        .map(lineImporter -> new ActorRefRoutee(getContext().actorOf(lineImporter)))
+                        .collect(toList())
+        );
     }
 
     @Override
@@ -51,4 +62,5 @@ public class LineImportSupervisor extends UntypedActor {
             getContext().system().shutdown();
         }
     }
+
 }
