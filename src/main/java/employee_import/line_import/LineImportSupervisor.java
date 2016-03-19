@@ -24,10 +24,10 @@ public class LineImportSupervisor extends UntypedActor {
     private int pending = 0;
 
     @Inject
-    public LineImportSupervisor(Collection<Creator<LineImporter>> lineImporterProps) {
+    public LineImportSupervisor(Collection<Creator<LineImporter>> lineImporters) {
         this.router = new Router(
                 new SmallestMailboxRoutingLogic(),
-                lineImporterProps.stream()
+                lineImporters.stream()
                         .map(lineImporter -> new ActorRefRoutee(getContext().actorOf(Props.create(LineImporter.class, lineImporter))))
                         .collect(toList())
         );
@@ -60,7 +60,7 @@ public class LineImportSupervisor extends UntypedActor {
         pending--;
         if (pending == 0) {
             LOGGER.info("Import is completed. Shutting down actor system");
-            getContext().system().shutdown();
+            getContext().system().terminate();
         }
     }
 
