@@ -6,13 +6,14 @@ import akka.japi.Creator;
 import akka.routing.ActorRefRoutee;
 import akka.routing.Router;
 import akka.routing.SmallestMailboxRoutingLogic;
+import employee_import.configuration.ImporterConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.Collection;
+import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -24,11 +25,11 @@ public class LineImportSupervisor extends UntypedActor {
     private int pending = 0;
 
     @Inject
-    public LineImportSupervisor(Collection<Creator<LineImporter>> lineImporters) {
+    public LineImportSupervisor(Creator<LineImporter> lineImporterCreator, ImporterConfig config) {
         this.router = new Router(
                 new SmallestMailboxRoutingLogic(),
-                lineImporters.stream()
-                        .map(lineImporter -> new ActorRefRoutee(getContext().actorOf(Props.create(LineImporter.class, lineImporter))))
+                IntStream.range(0, config.getNumberOfThreads())
+                        .mapToObj(i -> new ActorRefRoutee(getContext().actorOf(Props.create(LineImporter.class, lineImporterCreator))))
                         .collect(toList())
         );
     }

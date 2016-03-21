@@ -11,11 +11,6 @@ import employee_import.dao.EmployeeDao;
 import employee_import.line_import.LineImportSupervisor;
 import employee_import.line_import.LineImporter;
 
-import java.util.List;
-import java.util.stream.IntStream;
-
-import static java.util.stream.Collectors.toList;
-
 public class ActorSystemModule extends AbstractModule {
 
     @Override
@@ -25,10 +20,7 @@ public class ActorSystemModule extends AbstractModule {
 
     @Provides
     private ActorRef createLineImportSupervisor(final ActorSystem system, ImporterConfig config, EmployeeDao employeeDao) {
-        List<Creator<LineImporter>> lineImporters = IntStream.range(0, config.getNumberOfThreads())
-                .mapToObj(i -> (Creator<LineImporter>) () -> new LineImporter(employeeDao))
-                .collect(toList());
-
-        return system.actorOf(Props.create(LineImportSupervisor.class, () -> new LineImportSupervisor(lineImporters)));
+        Creator<LineImporter> lineImporterCreator = () -> new LineImporter(employeeDao);
+        return system.actorOf(Props.create(LineImportSupervisor.class, lineImporterCreator, config));
     }
 }
